@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+    <title>Obesity by State</title>
+    <meta charset="utf-8">
+    <script type="text/javascript" src="../lib/d3.v5.min.js"></script>
+    <script type="text/javascript" src="../lib/d3-dsv.min.js"></script>
+    <script type="text/javascript" src="../lib/d3-geo-projection.v2.min.js"></script>
+    <script type="text/javascript" src="../lib/d3-legend.min.js"></script>
+    <script type="text/javascript" src="../lib/d3-tip.min.js"></script>
+	<style></style>
+</head>
+
+<body>
+<h1>Predicting Percentage of Obese Individuals by State</h1>
+
+<!-- CheckBox -->
+<div>
+<label>Select Predictor Variables: </label>
+<input type="checkbox" class="predvar" value="m"><label>Mental Health</label>
+<input type="checkbox" class="predvar" value="p"><label>Physical Health</label>
+<input type="checkbox" class="predvar" value="i"><label>Income</label>
+<input type="checkbox" class="predvar" value="n"><label>Nutrition</label>
+<input type="checkbox" class="predvar" value="s"><label>Smoking</label>
+<input type="checkbox" class="predvar" value="a"><label>Alcohol</label>
+</div>
+
+<script>
+
+// svg
+var w = 600
+var h = 450
+var th = h/10
+
+var svg = d3.select("body").append("svg").attr("width", w).attr("height", h);
+var svg2 = d3.select("body").append("svg").attr("width", w).attr("height", h);
+var svg3 = d3.select("body").append("svg").attr("width", w*2).attr("height", th);
+
+// color scale
+qScale = d3.scaleQuantile().domain([.22,.38]).range(["#f2f0f7","#cbc9e2","#9e9ac8","#6a51a3"])
+
+// projection and path
+var projection = d3.geoAlbersUsa().translate([w/2, h/2]).scale([800])
+var path = d3.geoPath().projection(projection)
+
+// data read
+Promise.all([
+d3.json("us-states.json"),
+d3.dsv(",", "out.csv", function (d) {
+    return {
+        state: d.State,
+        act: d.Actual,
+        mpred: d["_MENTHLTH"],
+        ppred: d["_PHYSHLTH"],
+        ipred: d["_INCOME2"],
+        npred: d["_VEG"],
+        spred: d["_SMOKDAY2"],
+        apred: d["_ALCDAY5"],
+        mppred: d["_MENTHLTH_PHYSHLTH"],
+        mspred: d["_MENTHLTH_SMOKDAY2"],
+        mapred: d["_MENTHLTH_ALCDAY5"],
+        mipred: d["_MENTHLTH_INCOME2"],
+        mnpred: d["_MENTHLTH_VEG"],
+        pspred: d["_PHYSHLTH_SMOKDAY2"],
+        papred: d["_PHYSHLTH_ALCDAY5"],
+        pipred: d["_PHYSHLTH_INCOME2"],
+        pnpred: d["_PHYSHLTH_VEG"],
+        sapred: d["_SMOKDAY2_ALCDAY5"],
+        ispred: d["_SMOKDAY2_INCOME2"],
+        nspred: d["_SMOKDAY2_VEG"],
+        iapred: d["_ALCDAY5_INCOME2"],
+        napred: d["_ALCDAY5_VEG"],
+        inpred: d["_INCOME2_VEG"],
+        mpspred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2"],
+        mpapred: d["_MENTHLTH_PHYSHLTH_ALCDAY5"],
+        mpipred: d["_MENTHLTH_PHYSHLTH_INCOME2"],
+        mpnpred: d["_MENTHLTH_PHYSHLTH_VEG"],
+        msapred: d["_MENTHLTH_SMOKDAY2_ALCDAY5"],
+        mispred: d["_MENTHLTH_SMOKDAY2_INCOME2"],
+        mnspred: d["_MENTHLTH_SMOKDAY2_VEG"],
+        miapred: d["_MENTHLTH_ALCDAY5_INCOME2"],
+        mnapred: d["_MENTHLTH_ALCDAY5_VEG"],
+        minpred: d["_MENTHLTH_INCOME2_VEG"],
+        psapred: d["_PHYSHLTH_SMOKDAY2_ALCDAY5"],
+        pispred: d["_PHYSHLTH_SMOKDAY2_INCOME2"],
+        pnspred: d["_PHYSHLTH_SMOKDAY2_VEG"],
+        piapred: d["_PHYSHLTH_ALCDAY5_INCOME2"],
+        pnapred: d["_PHYSHLTH_ALCDAY5_VEG"],
+        pinpred: d["_PHYSHLTH_INCOME2_VEG"],
+        isapred: d["_SMOKDAY2_ALCDAY5_INCOME2"],
+        nsapred: d["_SMOKDAY2_ALCDAY5_VEG"],
+        inspred: d["_SMOKDAY2_INCOME2_VEG"],
+        inapred: d["_ALCDAY5_INCOME2_VEG"],
+        mpsapred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_ALCDAY5"],
+        mpispred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_INCOME2"],
+        mpnspred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_VEG"],
+        mpiapred: d["_MENTHLTH_PHYSHLTH_ALCDAY5_INCOME2"],
+        mpnapred: d["_MENTHLTH_PHYSHLTH_ALCDAY5_VEG"],
+        mpinpred: d["_MENTHLTH_PHYSHLTH_INCOME2_VEG"],
+        misapred: d["_MENTHLTH_SMOKDAY2_ALCDAY5_INCOME2"],
+        mnsapred: d["_MENTHLTH_SMOKDAY2_ALCDAY5_VEG"],
+        minspred: d["_MENTHLTH_SMOKDAY2_INCOME2_VEG"],
+        minapred: d["_MENTHLTH_ALCDAY5_INCOME2_VEG"],
+        pisapred: d["_PHYSHLTH_SMOKDAY2_ALCDAY5_INCOME2"],
+        pnsapred: d["_PHYSHLTH_SMOKDAY2_ALCDAY5_VEG"],
+        pinspred: d["_PHYSHLTH_SMOKDAY2_INCOME2_VEG"],
+        pinapred: d["_PHYSHLTH_ALCDAY5_INCOME2_VEG"],
+        insapred: d["_SMOKDAY2_ALCDAY5_INCOME2_VEG"],
+        mpisapred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_ALCDAY5_INCOME2"],
+        mpnsapred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_ALCDAY5_VEG"],
+        mpinspred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_INCOME2_VEG"],
+        mpinapred: d["_MENTHLTH_PHYSHLTH_ALCDAY5_INCOME2_VEG"],
+        minsapred: d["_MENTHLTH_SMOKDAY2_ALCDAY5_INCOME2_VEG"],
+        pinsapred: d["_PHYSHLTH_SMOKDAY2_ALCDAY5_INCOME2_VEG"],
+        mpinsapred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_ALCDAY5_INCOME2_VEG"]
+      };
+    })
+]).then(function (data) {
+      pageSetup(data[0],data[1])}
+);
+
+function pageSetup(states, obesityData){
+    //var obdt = []
+    //for (s of obesityData) {obdt.push(s.act)}
+    //qScale.domain(obdt)
+    svg.append("text")
+        .attr("x", w/2)
+        .attr("y", 50)
+        .attr("text-anchor", "middle")
+        .text("Your Map");
+    svg2.append("text")
+        .attr("x", w/2)
+        .attr("y", 50)
+        .attr("text-anchor", "middle")
+        .text("True Map");
+    svg2.append("g")
+        .attr("transform","translate("+(w-160)+",5)")
+        .call(d3.legendColor()
+        .labelFormat(d3.format(".0%"))
+        .scale(qScale))
+    svg2.append("g")
+        .selectAll("path")
+        .data(states.features).enter()
+        .append("path")
+        .attr("d", path)
+        .attr("id", function(d) {return d.properties.name.replace(/\s/g,'')})
+        .style('stroke', 'white')
+        .style('stroke-width', 1)
+        .style('fill','grey')
+
+    for (x of obesityData) {
+        svg2.select("#"+x.state.replace(/\s/g,'')).style("fill",function(d) {return qScale(x.act);})
+    }
+    obesityMap(states,obesityData,'pred')
+    d3.selectAll(".predvar").on("change",function(){stringcat(states,obesityData)});
+}
+
+function stringcat(states,obesityData){
+    selections = ''
+    d3.selectAll(".predvar").each(function(d){
+          if(d3.select(this).property("checked")){
+            selections += d3.select(this).property("value");
+          }
+        });
+    selections += 'pred'
+    console.log(selections)
+    obesityMap(states,obesityData,selections)
+}
+
+function obesityMap(states,obesityData,selections){
+    d3.selectAll(".temp").remove()
+    svg.append("g")
+        .selectAll("path")
+        .data(states.features).enter()
+        .append("path")
+        .attr("d", path)
+        .attr("class","temp")
+        .attr("id", function(d) {return d.properties.name.replace(/\s/g,'')})
+        .style('stroke', 'white')
+        .style('stroke-width', 1)
+        .style('fill','grey')
+    for (x of obesityData) {
+        svg.select("#"+x.state.replace(/\s/g,'')).style("fill",function(d) {return qScale(x[selections]);}).attr("obesitycat",function(d) {return qScale(x[selections])})
+    }
+    match(obesityData,selections)
+}
+
+function match(obesityData,selections){
+    var totalcor = 0
+    // note that when you append to corstatelist, you must append with a space in front of the name
+    var corstatelist = [" Georgia"," Florida"," Hawaii "]
+    for (x of obesityData) {
+        if (qScale(x.act) == qScale(x[selections]))
+            totalcor = totalcor + 1
+    }
+    svg3.append("text")
+        .attr("x", w)
+        .attr("y", th/2)
+        .attr("class","temp")
+        .attr("text-anchor", "middle")
+        .text("You predicted "+totalcor+"/50 states correctly:"+corstatelist);
+}
+
+</script>
+</body>
+</html>
