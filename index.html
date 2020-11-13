@@ -1,17 +1,30 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<style>
+    body{
+        background-color: #050F47;
+    }
+</style>
 <head>
     <title>Obesity by State</title>
     <meta charset="utf-8">
     <script type="text/javascript" src="../lib/d3.v5.min.js"></script>
     <script type="text/javascript" src="../lib/d3-dsv.min.js"></script>
-    <script type="text/javascript" src="../lib/d3-geo-projection.v2.min.js"></script>
+    <script type="text/javascript" src="../lib/d3-geo-projection.v2.smin.js"></script>
     <script type="text/javascript" src="../lib/d3-legend.min.js"></script>
     <script type="text/javascript" src="../lib/d3-tip.min.js"></script>
-	<style></style>
+	<style>
+        .d3-tip {
+            line-height: 1.3;
+            font-weight: 100;
+            background: rgba(255, 255, 255, 0.7);
+            color: #050f47;
+            pointer-events: none;
+        }
+    </style>
 </head>
 
-<body>
+<body style="font-family: monospace; color: white">
 <h1>Predicting Percentage of Obese Individuals by State</h1>
 
 <!-- CheckBox -->
@@ -37,7 +50,8 @@ var svg2 = d3.select("body").append("svg").attr("width", w).attr("height", h);
 var svg3 = d3.select("body").append("svg").attr("width", w*2).attr("height", th);
 
 // color scale
-qScale = d3.scaleQuantile().domain([.22,.38]).range(["#f2f0f7","#cbc9e2","#9e9ac8","#6a51a3"])
+qScale = d3.scaleQuantile().domain([.22,.38]).range(['#bbdefb', '#64b5f6', '#1e88e5', '#0d47a1'])
+    // '#88cdf6',"#5dbcd2","#2d82b5","#015c92"])
 
 // projection and path
 var projection = d3.geoAlbersUsa().translate([w/2, h/2]).scale([800])
@@ -127,17 +141,20 @@ function pageSetup(states, obesityData){
         .attr("x", w/2)
         .attr("y", 50)
         .attr("text-anchor", "middle")
-        .text("Your Map");
+        .text("Your Map")
+        .style("fill", "white");
     svg2.append("text")
         .attr("x", w/2)
         .attr("y", 50)
         .attr("text-anchor", "middle")
-        .text("True Map");
+        .text("True Map")
+        .style("fill", "white");
     svg2.append("g")
         .attr("transform","translate("+(w-160)+",5)")
         .call(d3.legendColor()
         .labelFormat(d3.format(".0%"))
         .scale(qScale))
+        .style("fill", "white")
     svg2.append("g")
         .selectAll("path")
         .data(states.features).enter()
@@ -163,12 +180,34 @@ function stringcat(states,obesityData){
           }
         });
     selections += 'pred'
-    console.log(selections)
     obesityMap(states,obesityData,selections)
 }
 
 function obesityMap(states,obesityData,selections){
     d3.selectAll(".temp").remove()
+
+    // enter code to define tooltip
+    var tip = d3.tip().attr('class', 'd3-tip').html(function(d) {
+        predicted = '';
+        actual = '';
+        if (selections == 'pred') {
+            predicted = '--';
+            actual = '--'
+        } else {
+            for (x of obesityData) {
+                if (x.state == d.properties.name) {
+                    predicted = (Number(x[selections]) * 100).toFixed(2)
+                    actual = (Number(x.act) * 100).toFixed(2)
+                    break;
+                }
+            }
+        }
+        return "<strong>State: </strong><span class='details'>" + d.properties.name + "<br></span>" +
+            "<strong>Predicted: </strong><span class='details'>" + predicted + "%<br></span>" +
+            "<strong>Actual: </strong><span class='details'>" + actual + "%<br></span>";
+    });
+    svg.call(tip);
+
     svg.append("g")
         .selectAll("path")
         .data(states.features).enter()
@@ -176,11 +215,31 @@ function obesityMap(states,obesityData,selections){
         .attr("d", path)
         .attr("class","temp")
         .attr("id", function(d) {return d.properties.name.replace(/\s/g,'')})
-        .style('stroke', 'white')
-        .style('stroke-width', 1)
-        .style('fill','grey')
+        .style('stroke', 'red')
+        .style('stroke-width', 1.5)
+        .style('fill','white')
+        .on('mouseover',function(d){
+            tip.show(d);
+            d3.select(this)
+                .style('opacity', .95)
+                .style('stroke-width', 2);
+        })
+        .on('mouseout', function(d){
+            tip.hide(d);
+            d3.select(this)
+                .style('opacity', 1)
+                .style('stroke-width', 1);
+        })
     for (x of obesityData) {
-        svg.select("#"+x.state.replace(/\s/g,'')).style("fill",function(d) {return qScale(x[selections]);}).attr("obesitycat",function(d) {return qScale(x[selections])})
+        svg.select("#"+x.state.replace(/\s/g,''))
+            .style("fill",function(d) {
+                return qScale(x[selections]);
+            })
+            .attr("obesitycat",function(d) {return qScale(x[selections])})
+        if (qScale(x.act) == qScale(x[selections]))
+            svg.select("#"+x.state.replace(/\s/g,''))
+                .style("stroke", "white")
+                .style("stroke-width", "1.1")
     }
     match(obesityData,selections)
 }
@@ -188,7 +247,6 @@ function obesityMap(states,obesityData,selections){
 function match(obesityData,selections){
     var totalcor = 0
     // note that when you append to corstatelist, you must append with a space in front of the name
-    var corstatelist = [" Georgia"," Florida"," Hawaii "]
     for (x of obesityData) {
         if (qScale(x.act) == qScale(x[selections]))
             totalcor = totalcor + 1
@@ -198,7 +256,8 @@ function match(obesityData,selections){
         .attr("y", th/2)
         .attr("class","temp")
         .attr("text-anchor", "middle")
-        .text("You predicted "+totalcor+"/50 states correctly:"+corstatelist);
+        .text("You predicted "+totalcor+"/50 states correctly.")
+        .style("fill", "white");
 }
 
 </script>
