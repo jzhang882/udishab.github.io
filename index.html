@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<html xmlns:xlink="http://www.w3.org/1999/xhtml"> </html>
 <style>
     body{
         background-color: #050F47;
@@ -13,7 +14,8 @@
     <script type="text/javascript" src="../lib/d3-geo-projection.v2.smin.js"></script>
     <script type="text/javascript" src="../lib/d3-legend.min.js"></script>
     <script type="text/javascript" src="../lib/d3-tip.min.js"></script>
-	<style>
+
+    <style>
         .d3-tip {
             line-height: 1.3;
             font-weight: 100;
@@ -29,237 +31,319 @@
 
 <!-- CheckBox -->
 <div>
-<label>Select Predictor Variables: </label>
-<input type="checkbox" class="predvar" value="m"><label>Mental Health</label>
-<input type="checkbox" class="predvar" value="p"><label>Physical Health</label>
-<input type="checkbox" class="predvar" value="i"><label>Income</label>
-<input type="checkbox" class="predvar" value="n"><label>Nutrition</label>
-<input type="checkbox" class="predvar" value="s"><label>Smoking</label>
-<input type="checkbox" class="predvar" value="a"><label>Alcohol</label>
+    <label>Select Predictor Variables: </label>
+    <input type="checkbox" class="predvar" value="m"><label>Mental Health</label>
+    <input type="checkbox" class="predvar" value="p"><label>Physical Activity</label>
+    <input type="checkbox" class="predvar" value="i"><label>Income</label>
+    <input type="checkbox" class="predvar" value="n"><label>Nutrition</label>
+    <input type="checkbox" class="predvar" value="s"><label>Smoking</label>
+    <input type="checkbox" class="predvar" value="a"><label>Alcohol</label>
 </div>
 
 <script>
 
-// svg
-var w = 600
-var h = 450
-var th = h/10
+    // svg
+    var w = 600
+    var h = 450
+    var th = h/10
 
-var svg = d3.select("body").append("svg").attr("width", w).attr("height", h);
-var svg2 = d3.select("body").append("svg").attr("width", w).attr("height", h);
-var svg3 = d3.select("body").append("svg").attr("width", w*2).attr("height", th);
+    var svg = d3.select("body").append("svg").attr("width", w).attr("height", h);
+    var svg2 = d3.select("body").append("svg").attr("width", w).attr("height", h);
+    var svg3 = d3.select("body").append("svg").attr("width", w*2).attr("height", th);
 
-// color scale
-qScale = d3.scaleQuantile().domain([.22,.38]).range(['#bbdefb', '#64b5f6', '#1e88e5', '#0d47a1'])
-    // '#88cdf6',"#5dbcd2","#2d82b5","#015c92"])
+    var tool_tip = d3.tip()
+        .attr("class", "d3-tip")
+        .offset([20, 120])
+        .html("<p style=\"text-align:center;\">Obesity Rate Per Year: 2011-2015</p><div id='tipDiv'></div>");
 
-// projection and path
-var projection = d3.geoAlbersUsa().translate([w/2, h/2]).scale([800])
-var path = d3.geoPath().projection(projection)
+    // color scale
+    qScale = d3.scaleQuantile().domain([.22,.38]).range(['#bbdefb', '#64b5f6', '#1e88e5', '#0d47a1'])
 
-// data read
-Promise.all([
-d3.json("us-states.json"),
-d3.dsv(",", "out.csv", function (d) {
-    return {
-        state: d.State,
-        act: d.Actual,
-        mpred: d["_MENTHLTH"],
-        ppred: d["_PHYSHLTH"],
-        ipred: d["_INCOME2"],
-        npred: d["_VEG"],
-        spred: d["_SMOKDAY2"],
-        apred: d["_ALCDAY5"],
-        mppred: d["_MENTHLTH_PHYSHLTH"],
-        mspred: d["_MENTHLTH_SMOKDAY2"],
-        mapred: d["_MENTHLTH_ALCDAY5"],
-        mipred: d["_MENTHLTH_INCOME2"],
-        mnpred: d["_MENTHLTH_VEG"],
-        pspred: d["_PHYSHLTH_SMOKDAY2"],
-        papred: d["_PHYSHLTH_ALCDAY5"],
-        pipred: d["_PHYSHLTH_INCOME2"],
-        pnpred: d["_PHYSHLTH_VEG"],
-        sapred: d["_SMOKDAY2_ALCDAY5"],
-        ispred: d["_SMOKDAY2_INCOME2"],
-        nspred: d["_SMOKDAY2_VEG"],
-        iapred: d["_ALCDAY5_INCOME2"],
-        napred: d["_ALCDAY5_VEG"],
-        inpred: d["_INCOME2_VEG"],
-        mpspred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2"],
-        mpapred: d["_MENTHLTH_PHYSHLTH_ALCDAY5"],
-        mpipred: d["_MENTHLTH_PHYSHLTH_INCOME2"],
-        mpnpred: d["_MENTHLTH_PHYSHLTH_VEG"],
-        msapred: d["_MENTHLTH_SMOKDAY2_ALCDAY5"],
-        mispred: d["_MENTHLTH_SMOKDAY2_INCOME2"],
-        mnspred: d["_MENTHLTH_SMOKDAY2_VEG"],
-        miapred: d["_MENTHLTH_ALCDAY5_INCOME2"],
-        mnapred: d["_MENTHLTH_ALCDAY5_VEG"],
-        minpred: d["_MENTHLTH_INCOME2_VEG"],
-        psapred: d["_PHYSHLTH_SMOKDAY2_ALCDAY5"],
-        pispred: d["_PHYSHLTH_SMOKDAY2_INCOME2"],
-        pnspred: d["_PHYSHLTH_SMOKDAY2_VEG"],
-        piapred: d["_PHYSHLTH_ALCDAY5_INCOME2"],
-        pnapred: d["_PHYSHLTH_ALCDAY5_VEG"],
-        pinpred: d["_PHYSHLTH_INCOME2_VEG"],
-        isapred: d["_SMOKDAY2_ALCDAY5_INCOME2"],
-        nsapred: d["_SMOKDAY2_ALCDAY5_VEG"],
-        inspred: d["_SMOKDAY2_INCOME2_VEG"],
-        inapred: d["_ALCDAY5_INCOME2_VEG"],
-        mpsapred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_ALCDAY5"],
-        mpispred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_INCOME2"],
-        mpnspred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_VEG"],
-        mpiapred: d["_MENTHLTH_PHYSHLTH_ALCDAY5_INCOME2"],
-        mpnapred: d["_MENTHLTH_PHYSHLTH_ALCDAY5_VEG"],
-        mpinpred: d["_MENTHLTH_PHYSHLTH_INCOME2_VEG"],
-        misapred: d["_MENTHLTH_SMOKDAY2_ALCDAY5_INCOME2"],
-        mnsapred: d["_MENTHLTH_SMOKDAY2_ALCDAY5_VEG"],
-        minspred: d["_MENTHLTH_SMOKDAY2_INCOME2_VEG"],
-        minapred: d["_MENTHLTH_ALCDAY5_INCOME2_VEG"],
-        pisapred: d["_PHYSHLTH_SMOKDAY2_ALCDAY5_INCOME2"],
-        pnsapred: d["_PHYSHLTH_SMOKDAY2_ALCDAY5_VEG"],
-        pinspred: d["_PHYSHLTH_SMOKDAY2_INCOME2_VEG"],
-        pinapred: d["_PHYSHLTH_ALCDAY5_INCOME2_VEG"],
-        insapred: d["_SMOKDAY2_ALCDAY5_INCOME2_VEG"],
-        mpisapred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_ALCDAY5_INCOME2"],
-        mpnsapred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_ALCDAY5_VEG"],
-        mpinspred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_INCOME2_VEG"],
-        mpinapred: d["_MENTHLTH_PHYSHLTH_ALCDAY5_INCOME2_VEG"],
-        minsapred: d["_MENTHLTH_SMOKDAY2_ALCDAY5_INCOME2_VEG"],
-        pinsapred: d["_PHYSHLTH_SMOKDAY2_ALCDAY5_INCOME2_VEG"],
-        mpinsapred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_ALCDAY5_INCOME2_VEG"]
-      };
-    })
-]).then(function (data) {
-      pageSetup(data[0],data[1])}
-);
+    // projection and path
+    var projection = d3.geoAlbersUsa().translate([w/2, h/2]).scale([800])
+    var path = d3.geoPath().projection(projection)
 
-function pageSetup(states, obesityData){
-    //var obdt = []
-    //for (s of obesityData) {obdt.push(s.act)}
-    //qScale.domain(obdt)
-    svg.append("text")
-        .attr("x", w/2)
-        .attr("y", 50)
-        .attr("text-anchor", "middle")
-        .text("Your Map")
-        .style("fill", "white");
-    svg2.append("text")
-        .attr("x", w/2)
-        .attr("y", 50)
-        .attr("text-anchor", "middle")
-        .text("True Map")
-        .style("fill", "white");
-    svg2.append("g")
-        .attr("transform","translate("+(w-160)+",5)")
-        .call(d3.legendColor()
-        .labelFormat(d3.format(".0%"))
-        .scale(qScale))
-        .style("fill", "white")
-    svg2.append("g")
-        .selectAll("path")
-        .data(states.features).enter()
-        .append("path")
-        .attr("d", path)
-        .attr("id", function(d) {return d.properties.name.replace(/\s/g,'')})
-        .style('stroke', 'white')
-        .style('stroke-width', 1)
-        .style('fill','grey')
+    // data read
+    Promise.all([
+        d3.json("us-states.json"),
+        d3.dsv(",", "out.csv", function (d) {
+            return {
+                state: d.State,
+                act: d.Actual,
+                mpred: d["_MENTHLTH"],
+                ppred: d["_PHYSHLTH"],
+                ipred: d["_INCOME2"],
+                npred: d["_VEG"],
+                spred: d["_SMOKDAY2"],
+                apred: d["_ALCDAY5"],
+                mppred: d["_MENTHLTH_PHYSHLTH"],
+                mspred: d["_MENTHLTH_SMOKDAY2"],
+                mapred: d["_MENTHLTH_ALCDAY5"],
+                mipred: d["_MENTHLTH_INCOME2"],
+                mnpred: d["_MENTHLTH_VEG"],
+                pspred: d["_PHYSHLTH_SMOKDAY2"],
+                papred: d["_PHYSHLTH_ALCDAY5"],
+                pipred: d["_PHYSHLTH_INCOME2"],
+                pnpred: d["_PHYSHLTH_VEG"],
+                sapred: d["_SMOKDAY2_ALCDAY5"],
+                ispred: d["_SMOKDAY2_INCOME2"],
+                nspred: d["_SMOKDAY2_VEG"],
+                iapred: d["_ALCDAY5_INCOME2"],
+                napred: d["_ALCDAY5_VEG"],
+                inpred: d["_INCOME2_VEG"],
+                mpspred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2"],
+                mpapred: d["_MENTHLTH_PHYSHLTH_ALCDAY5"],
+                mpipred: d["_MENTHLTH_PHYSHLTH_INCOME2"],
+                mpnpred: d["_MENTHLTH_PHYSHLTH_VEG"],
+                msapred: d["_MENTHLTH_SMOKDAY2_ALCDAY5"],
+                mispred: d["_MENTHLTH_SMOKDAY2_INCOME2"],
+                mnspred: d["_MENTHLTH_SMOKDAY2_VEG"],
+                miapred: d["_MENTHLTH_ALCDAY5_INCOME2"],
+                mnapred: d["_MENTHLTH_ALCDAY5_VEG"],
+                minpred: d["_MENTHLTH_INCOME2_VEG"],
+                psapred: d["_PHYSHLTH_SMOKDAY2_ALCDAY5"],
+                pispred: d["_PHYSHLTH_SMOKDAY2_INCOME2"],
+                pnspred: d["_PHYSHLTH_SMOKDAY2_VEG"],
+                piapred: d["_PHYSHLTH_ALCDAY5_INCOME2"],
+                pnapred: d["_PHYSHLTH_ALCDAY5_VEG"],
+                pinpred: d["_PHYSHLTH_INCOME2_VEG"],
+                isapred: d["_SMOKDAY2_ALCDAY5_INCOME2"],
+                nsapred: d["_SMOKDAY2_ALCDAY5_VEG"],
+                inspred: d["_SMOKDAY2_INCOME2_VEG"],
+                inapred: d["_ALCDAY5_INCOME2_VEG"],
+                mpsapred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_ALCDAY5"],
+                mpispred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_INCOME2"],
+                mpnspred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_VEG"],
+                mpiapred: d["_MENTHLTH_PHYSHLTH_ALCDAY5_INCOME2"],
+                mpnapred: d["_MENTHLTH_PHYSHLTH_ALCDAY5_VEG"],
+                mpinpred: d["_MENTHLTH_PHYSHLTH_INCOME2_VEG"],
+                misapred: d["_MENTHLTH_SMOKDAY2_ALCDAY5_INCOME2"],
+                mnsapred: d["_MENTHLTH_SMOKDAY2_ALCDAY5_VEG"],
+                minspred: d["_MENTHLTH_SMOKDAY2_INCOME2_VEG"],
+                minapred: d["_MENTHLTH_ALCDAY5_INCOME2_VEG"],
+                pisapred: d["_PHYSHLTH_SMOKDAY2_ALCDAY5_INCOME2"],
+                pnsapred: d["_PHYSHLTH_SMOKDAY2_ALCDAY5_VEG"],
+                pinspred: d["_PHYSHLTH_SMOKDAY2_INCOME2_VEG"],
+                pinapred: d["_PHYSHLTH_ALCDAY5_INCOME2_VEG"],
+                insapred: d["_SMOKDAY2_ALCDAY5_INCOME2_VEG"],
+                mpisapred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_ALCDAY5_INCOME2"],
+                mpnsapred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_ALCDAY5_VEG"],
+                mpinspred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_INCOME2_VEG"],
+                mpinapred: d["_MENTHLTH_PHYSHLTH_ALCDAY5_INCOME2_VEG"],
+                minsapred: d["_MENTHLTH_SMOKDAY2_ALCDAY5_INCOME2_VEG"],
+                pinsapred: d["_PHYSHLTH_SMOKDAY2_ALCDAY5_INCOME2_VEG"],
+                mpinsapred: d["_MENTHLTH_PHYSHLTH_SMOKDAY2_ALCDAY5_INCOME2_VEG"]
+            };}),
+        d3.dsv(",", "states_obese.csv", function(d) {
+            return {
+                state: d['_STATE'],
+                y11: Number(d['OBESE_11']),
+                y12: Number(d['OBESE_12']),
+                y13: Number(d['OBESE_13']),
+                y14: Number(d['OBESE_14']),
+                y15: Number(d['OBESE_15'])
+            };})
+    ]).then(function (data) {
+        pageSetup(data[0],data[1],data[2])}
+    );
 
-    for (x of obesityData) {
-        svg2.select("#"+x.state.replace(/\s/g,'')).style("fill",function(d) {return qScale(x.act);})
+    function pageSetup(states, obesityData, obesityRange){
+        svg2.call(tool_tip);
+        svg.append("text")
+            .attr("x", w/2)
+            .attr("y", 50)
+            .attr("text-anchor", "middle")
+            .text("Your Map")
+            .style("fill", "white");
+        svg2.append("text")
+            .attr("x", w/2)
+            .attr("y", 50)
+            .attr("text-anchor", "middle")
+            .text("True Map")
+            .style("fill", "white");
+        svg2.append("g")
+            .attr("transform","translate("+(w-160)+",5)")
+            .call(d3.legendColor()
+                .labelFormat(d3.format(".0%"))
+                .scale(qScale))
+            .style("fill", "white")
+        svg2.append("g")
+            .selectAll("path")
+            .data(states.features).enter()
+            .append("path")
+            .attr("d", path)
+            .attr("id", function(d) {return d.properties.name.replace(/\s/g,'')})
+            .style('stroke', 'white')
+            .style('stroke-width', 1)
+            .style('fill','grey')
+            .on('mouseover',function(d){
+                d3.select(this)
+                    .style('opacity', .95)
+                    .style('stroke-width', 2);
+
+                tool_tip.show();
+
+                var margin = {top: 5, right: 30, bottom: 30, left: 40},
+                    width = 260 - margin.left - margin.right,
+                    height = 140 - margin.top - margin.bottom;
+
+                var tipSVG = d3.select("#tipDiv")
+                    .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+
+                for (x of obesityRange) {
+                    if (x.state == d.properties.name) {
+                        var obese_data = [{"year": 2011, "value": x.y11},
+                            {"year": 2012, "value": x.y12},
+                            {"year": 2013, "value": x.y13},
+                            {"year": 2014, "value": x.y14},
+                            {"year": 2015, "value": x.y15}]
+                        break;
+                    }
+                }
+
+                tipSVG.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", 5)
+                    .attr("class","temp")
+                    .attr("text-anchor", "middle")
+                    .text(d.properties.name)
+                    .style("fill", "red");
+
+                var x = d3.scalePoint()
+                    .domain([2011,2012,2013,2014,2015])
+                    .range([ 0, width]);
+                tipSVG.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x));
+
+                maxY = d3.max(obese_data, function (d) {return d.value;});
+                minY = d3.min(obese_data, function (d) {return d.value;});
+                var y = d3.scaleLinear()
+                    .domain([minY * .95, maxY * 1.05])
+                    .range([height, 0 ]);
+                yAxis = d3.axisLeft(y).ticks(5);
+                tipSVG.append("g")
+                    .call(yAxis);
+
+                tipSVG.append("path")
+                    .datum(obese_data)
+                    .attr("fill", "none")
+                    .attr("stroke", "steelblue")
+                    .attr("stroke-width", 1.5)
+                    .attr("d", d3.line()
+                        .x(function(d) { return x(d.year) })
+                        .y(function(d) { return y(d.value) })
+                    )
+            })
+            .on('mouseout', function(d){
+                tool_tip.hide();
+                d3.select(this)
+                    .style('opacity', 1)
+                    .style('stroke-width', 1);
+            })
+
+        for (x of obesityData) {
+            svg2.select("#"+x.state.replace(/\s/g,'')).style("fill",function(d) {return qScale(x.act);})
+        }
+        obesityMap(states,obesityData,'pred')
+        d3.selectAll(".predvar").on("change",function(){stringcat(states,obesityData)});
     }
-    obesityMap(states,obesityData,'pred')
-    d3.selectAll(".predvar").on("change",function(){stringcat(states,obesityData)});
-}
 
-function stringcat(states,obesityData){
-    selections = ''
-    d3.selectAll(".predvar").each(function(d){
-          if(d3.select(this).property("checked")){
-            selections += d3.select(this).property("value");
-          }
+    function stringcat(states,obesityData){
+        selections = ''
+        d3.selectAll(".predvar").each(function(d){
+            if(d3.select(this).property("checked")){
+                selections += d3.select(this).property("value");
+            }
         });
-    selections += 'pred'
-    obesityMap(states,obesityData,selections)
-}
+        selections += 'pred'
+        obesityMap(states,obesityData,selections)
+    }
 
-function obesityMap(states,obesityData,selections){
-    d3.selectAll(".temp").remove()
+    function obesityMap(states,obesityData,selections){
+        d3.selectAll(".temp").remove()
 
-    // enter code to define tooltip
-    var tip = d3.tip().attr('class', 'd3-tip').html(function(d) {
-        predicted = '';
-        actual = '';
-        if (selections == 'pred') {
-            predicted = '--';
-            actual = '--'
-        } else {
-            for (x of obesityData) {
-                if (x.state == d.properties.name) {
-                    predicted = (Number(x[selections]) * 100).toFixed(2)
-                    actual = (Number(x.act) * 100).toFixed(2)
-                    break;
+        // enter code to define tooltip
+        var tip = d3.tip().attr('class', 'd3-tip').html(function(d) {
+            predicted = '';
+            actual = '';
+            if (selections == 'pred') {
+                predicted = '--';
+                actual = '--'
+            } else {
+                for (x of obesityData) {
+                    if (x.state == d.properties.name) {
+                        predicted = (Number(x[selections]) * 100).toFixed(2)
+                        actual = (Number(x.act) * 100).toFixed(2)
+                        break;
+                    }
                 }
             }
-        }
-        return "<strong>State: </strong><span class='details'>" + d.properties.name + "<br></span>" +
-            "<strong>Predicted: </strong><span class='details'>" + predicted + "%<br></span>" +
-            "<strong>Actual: </strong><span class='details'>" + actual + "%<br></span>";
-    });
-    svg.call(tip);
+            return "<strong>State: </strong><span class='details'>" + d.properties.name + "<br></span>" +
+                "<strong>Predicted: </strong><span class='details'>" + predicted + "%<br></span>" +
+                "<strong>Actual: </strong><span class='details'>" + actual + "%<br></span>";
+        });
+        svg.call(tip);
 
-    svg.append("g")
-        .selectAll("path")
-        .data(states.features).enter()
-        .append("path")
-        .attr("d", path)
-        .attr("class","temp")
-        .attr("id", function(d) {return d.properties.name.replace(/\s/g,'')})
-        .style('stroke', 'red')
-        .style('stroke-width', 1.5)
-        .style('fill','white')
-        .on('mouseover',function(d){
-            tip.show(d);
-            d3.select(this)
-                .style('opacity', .95)
-                .style('stroke-width', 2);
-        })
-        .on('mouseout', function(d){
-            tip.hide(d);
-            d3.select(this)
-                .style('opacity', 1)
-                .style('stroke-width', 1);
-        })
-    for (x of obesityData) {
-        svg.select("#"+x.state.replace(/\s/g,''))
-            .style("fill",function(d) {
-                return qScale(x[selections]);
+        svg.append("g")
+            .selectAll("path")
+            .data(states.features).enter()
+            .append("path")
+            .attr("d", path)
+            .attr("class","temp")
+            .attr("id", function(d) {return d.properties.name.replace(/\s/g,'')})
+            .style('stroke', 'red')
+            .style('stroke-width', 1.5)
+            .style('fill','white')
+            .on('mouseover',function(d){
+                tip.show(d);
+                d3.select(this)
+                    .style('opacity', .95)
+                    .style('stroke-width', 2);
             })
-            .attr("obesitycat",function(d) {return qScale(x[selections])})
-        if (qScale(x.act) == qScale(x[selections]))
+            .on('mouseout', function(d){
+                tip.hide(d);
+                d3.select(this)
+                    .style('opacity', 1)
+                    .style('stroke-width', 1);
+            })
+        for (x of obesityData) {
             svg.select("#"+x.state.replace(/\s/g,''))
-                .style("stroke", "white")
-                .style("stroke-width", "1.1")
+                .style("fill",function(d) {
+                    return qScale(x[selections]);
+                })
+                .attr("obesitycat",function(d) {return qScale(x[selections])})
+                .style('stroke', 'white')
+            if (qScale(x.act) == qScale(x[selections]))
+                svg.select("#"+x.state.replace(/\s/g,''))
+                    .style("stroke-width", "1.1")
+        }
+        match(obesityData,selections)
     }
-    match(obesityData,selections)
-}
 
-function match(obesityData,selections){
-    var totalcor = 0
-    // note that when you append to corstatelist, you must append with a space in front of the name
-    for (x of obesityData) {
-        if (qScale(x.act) == qScale(x[selections]))
-            totalcor = totalcor + 1
+    function match(obesityData,selections){
+        var totalcor = 0
+        // note that when you append to corstatelist, you must append with a space in front of the name
+        for (x of obesityData) {
+            if (qScale(x.act) == qScale(x[selections]))
+                totalcor = totalcor + 1
+        }
+
+        svg3.append("text")
+            .attr("x", w)
+            .attr("y", th/2)
+            .attr("class","temp")
+            .attr("text-anchor", "middle")
+            .text("You predicted "+totalcor+"/50 states correctly.")
+            .style("fill", "white");
     }
-    svg3.append("text")
-        .attr("x", w)
-        .attr("y", th/2)
-        .attr("class","temp")
-        .attr("text-anchor", "middle")
-        .text("You predicted "+totalcor+"/50 states correctly.")
-        .style("fill", "white");
-}
 
 </script>
+<p><a href="tableau_vis.html">Click for Individual Predictor Trends by State</a></p>
 </body>
 </html>
