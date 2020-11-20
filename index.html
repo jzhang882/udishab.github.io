@@ -40,6 +40,9 @@
     <input type="checkbox" class="predvar" value="n"><label>Nutrition</label>
     <input type="checkbox" class="predvar" value="s"><label>Smoking</label>
     <input type="checkbox" class="predvar" value="a"><label>Alcohol</label>
+    <br>
+    <label>Show Map in Accuracy Mode: </label>
+    <input type="checkbox" class="predvar" value="y"><label>Accuracy Mode</label>
 </div>
 
 <script>
@@ -252,22 +255,28 @@
         for (x of obesityData) {
             svg2.select("#"+x.state.replace(/\s/g,'')).style("fill",function(d) {return qScale(x.act);})
         }
-        obesityMap(states,obesityData,'pred')
+        obesityMap(states,obesityData,'pred','n')
         d3.selectAll(".predvar").on("change",function(){stringcat(states,obesityData)});
     }
 
     function stringcat(states,obesityData){
         selections = ''
-        d3.selectAll(".predvar").each(function(d){
-            if(d3.select(this).property("checked")){
-                selections += d3.select(this).property("value");
+        mapType = 'n'
+        d3.selectAll(".predvar").each(function(d) {
+            if (d3.select(this).property("checked")) {
+                if (d3.select(this).property("value") != 'y') {
+                    selections += d3.select(this).property("value");
+                }
+                if (d3.select(this).property("value") == 'y') {
+                    mapType = 'y';
+                }
             }
         });
         selections += 'pred'
-        obesityMap(states,obesityData,selections)
+        obesityMap(states,obesityData,selections, mapType)
     }
 
-    function obesityMap(states,obesityData,selections){
+    function obesityMap(states,obesityData,selections,mapType){
         d3.selectAll(".temp").remove()
 
         // enter code to define tooltip
@@ -321,9 +330,18 @@
                 })
                 .attr("obesitycat",function(d) {return qScale(x[selections])})
                 .style('stroke', 'white')
-            if (qScale(x.act) == qScale(x[selections]))
-                svg.select("#"+x.state.replace(/\s/g,''))
-                    .style("stroke-width", "1.1")
+            if (mapType == 'y') {
+                diff = x[selections] - x.act
+                if (diff < .02 && diff > -.02) {
+                    svg.select("#"+x.state.replace(/\s/g,''))
+                        .style("stroke-width", "1.1")
+                        .style('fill', 'green')
+                } else {
+                    svg.select("#"+x.state.replace(/\s/g,''))
+                        .style("stroke-width", "1.1")
+                        .style('fill', 'red')
+                }
+            }
         }
         match(obesityData,selections)
     }
@@ -332,7 +350,8 @@
         var totalcor = 0
         // note that when you append to corstatelist, you must append with a space in front of the name
         for (x of obesityData) {
-            if (qScale(x.act) == qScale(x[selections]))
+            diff = x[selections] - x.act
+            if (diff < .02 && diff > -.02)
                 totalcor = totalcor + 1
         }
 
